@@ -77,6 +77,7 @@ public class Curator5ZookeeperClient extends AbstractZookeeperClient<Curator5Zoo
             }
             client = builder.build();
             client.getConnectionStateListenable().addListener(new CuratorConnectionStateListener(url));
+            // 创建zk连接
             client.start();
             boolean connected = client.blockUntilConnected(timeout, TimeUnit.MILLISECONDS);
             if (!connected) {

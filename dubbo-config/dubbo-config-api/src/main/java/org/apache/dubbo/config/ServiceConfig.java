@@ -209,18 +209,23 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
             return;
         }
         // prepare for export
+        // cm: 获取一个发布组件，封装了所有跟dubbo发布相关的数据
         ModuleDeployer moduleDeployer = getScopeModel().getDeployer();
+        // cm: 调用deployer的初始化方法，准备一下配置信息，如初始化注册中心，配置中心，元数据中心等，与ZK发起元数据上报连接
         moduleDeployer.prepare();
 
         if (!this.isRefreshed()) {
+            // cm: 校验并更新一些service的配置信息，并执行刷新后置处理器等
+            // Refreshing ServiceConfig with prefix [dubbo.service.org.apache.dubbo.demo.DemoService]
             this.refresh();
         }
         if (this.shouldExport()) {
-            this.init();
+            this.init(); // cm: 没做什么实际的东西
 
             if (shouldDelay()) {
                 doDelayExport();
             } else {
+                // 暴露服务，把服务注册到本地和远程注册中心
                 doExport();
             }
 
@@ -357,6 +362,7 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
     @Override
     protected void postProcessRefresh() {
         super.postProcessRefresh();
+        // cm: 校验一下当前DemoService是否为仅injvm, generic, stub等配置信息
         checkAndUpdateSubConfigs();
     }
 
@@ -371,7 +377,9 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
         if (StringUtils.isEmpty(path)) {
             path = interfaceName;
         }
+        // cm: 构造url并转成Exporter
         doExportUrls();
+        // cm: exported之后执行ServiceListener回调
         exported();
     }
 
@@ -387,15 +395,17 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
             serviceMetadata);
 
         repository.registerProvider(providerModel);
-
+        // 加载到两个registryUrl，一个是服务发现的，一个是服务本身
         List<URL> registryURLs = ConfigValidationUtils.loadRegistries(this, true);
 
         for (ProtocolConfig protocolConfig : protocols) {
+            // cm: path是服务的全限定类名
             String pathKey = URL.buildKey(getContextPath(protocolConfig)
                     .map(p -> p + "/" + path)
                     .orElse(path), group, version);
             // In case user specified path, register service one more time to map it to path.
             repository.registerService(pathKey, interfaceClass);
+            // cm: 这里是真正把provider注册到zk中的方法，上方的register都是缓存到本地内存中
             doExportUrlsFor1Protocol(protocolConfig, registryURLs);
         }
     }
@@ -405,9 +415,9 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
 
         //init serviceMetadata attachments
         serviceMetadata.getAttachments().putAll(map);
-
+        // cm: dubbo://协议的URL，拼接了各种参数信息，如接口，方法等
         URL url = buildUrl(protocolConfig, registryURLs, map);
-
+        // cm: 三个url传入，进行服务export
         exportUrl(url, registryURLs);
     }
 
@@ -570,14 +580,16 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
         String scope = url.getParameter(SCOPE_KEY);
         // don't export when none is configured
         if (!SCOPE_NONE.equalsIgnoreCase(scope)) {
-
+            // cm: scope是null，没有配置值，故本地和远程同时会满足，进行export
             // export to local if the config is not remote (export to remote only when config is remote)
             if (!SCOPE_REMOTE.equalsIgnoreCase(scope)) {
+                // cm: 先注册到本地，injvm，只需要dubbo://的URL
                 exportLocal(url);
             }
 
             // export to remote if the config is not local (export to local only when config is local)
             if (!SCOPE_LOCAL.equalsIgnoreCase(scope)) {
+                // cm: 再注册到远程注册中心里
                 url = exportRemote(url, registryURLs);
                 MetadataUtils.publishServiceDefinition(url);
             }
@@ -617,7 +629,9 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
                         logger.info("Export dubbo service " + interfaceClass.getName() + " to url " + url.getServiceKey());
                     }
                 }
-
+                // cm: 一个discovery-service-registry-url, 一个registryUrl，分别doExportUrl
+                // discovery-service-registry-url执行了openNettyServer
+                // registryUrl，执行NettyServer的reset方法，发起了zk上的服务注册
                 doExportUrl(registryURL.putAttribute(EXPORT_KEY, url), true);
             }
 
@@ -640,10 +654,15 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     private void doExportUrl(URL url, boolean withMetaData) {
+        // cm: 通过ProxyFactory把url、服务实现类和接口封装成Invoker, 即作为代理, 后续都通过Invoker调用实现类
+        // 真实调用流程ProxyFactory$Adaptive -> StubProxyFactoryWrapper ->JavassistProxyFactory
         Invoker<?> invoker = proxyFactory.getInvoker(ref, (Class) interfaceClass, url);
         if (withMetaData) {
+            // cm: 本地export不涉及, 远程涉及，只是简单的把metadata也包装进去
             invoker = new DelegateProviderMetaDataInvoker(invoker, this);
         }
+        // cm: 通过SPI注册到注册本地/注册中心，把invoker进行export成Exporter,并缓存到ServiceConfig
+        // 通过调用栈可发现, 对应exportLocal: Protocol$Adaptive -> ProtocolSerializationWrapper -> ProtocolFilterWrapper -> ProtocolListenerWrapper -> InjvmProtocol
         Exporter<?> exporter = protocolSPI.export(invoker);
         exporters.add(exporter);
     }
@@ -653,6 +672,7 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
      * always export injvm
      */
     private void exportLocal(URL url) {
+        // cm: 转成injvm://的URL
         URL local = URLBuilder.from(url)
                 .setProtocol(LOCAL_PROTOCOL)
                 .setHost(LOCALHOST_VALUE)

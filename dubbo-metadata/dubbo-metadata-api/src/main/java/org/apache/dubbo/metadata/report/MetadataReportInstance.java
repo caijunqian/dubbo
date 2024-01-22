@@ -59,6 +59,10 @@ public class MetadataReportInstance {
         String relatedRegistryId = config.getRegistry() == null ? DEFAULT_KEY : config.getRegistry();
 //        RegistryConfig registryConfig = applicationModel.getConfigManager().getRegistry(relatedRegistryId)
 //                .orElseThrow(() -> new IllegalStateException("Registry id " + relatedRegistryId + " does not exist."));
+        // cm: 根据配置url初始化构造MetadataReport并缓存
+        // 此处会和zk建立连接，进行元数据的上报，实际调用的是AbstractMetadataReportFactory
+        // 之后通过ZookeeperMetadataReportFactory获取ZookeeperMetadataReport，
+        // 最终通过ZookeeperTransporter创建zkClient, 与zk建立连接
         MetadataReport metadataReport = metadataReportFactory.getMetadataReport(url);
         if (metadataReport != null) {
             metadataReports.put(relatedRegistryId, metadataReport);

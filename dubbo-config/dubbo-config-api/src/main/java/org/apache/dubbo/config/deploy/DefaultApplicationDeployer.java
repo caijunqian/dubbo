@@ -185,20 +185,23 @@ public class DefaultApplicationDeployer extends AbstractDeployer<ApplicationMode
             return;
         }
         // Ensure that the initialization is completed when concurrent calls
+        // cm: 使用this加锁不一定代表这个方法有并发，可能是这个类中的多个方法有并发
         synchronized (this) {
             if (initialized.get()) {
                 return;
             }
             // register shutdown hook
+            // cm：注册构子，在jvm销毁前执行
             registerShutdownHook();
-
+            // cm：读取一些配置信息，并校验，如ConfigCenterConfig，ApplicationConfig相关的
             startConfigCenter();
-
+            // cm：分类读取各种配置信息，此处并没有执行实际逻辑
             loadApplicationConfigs();
-
+            // cm: 初始化模块Deployer，类似于Dubbo module[1.1.0]
             initModuleDeployers();
 
             // @since 2.7.8
+            // cm: 初始化MetadataReportInstance，与zk建立连接
             startMetadataCenter();
 
             initMetadataService();
@@ -286,7 +289,7 @@ public class DefaultApplicationDeployer extends AbstractDeployer<ApplicationMode
             }
             return;
         }
-
+        // cm: 根据配置初始化metadataReportInstance
         MetadataReportInstance metadataReportInstance = applicationModel.getBeanFactory().getBean(MetadataReportInstance.class);
         for (MetadataReportConfig metadataReportConfig : metadataReportConfigs) {
             ConfigValidationUtils.validateMetadataConfig(metadataReportConfig);

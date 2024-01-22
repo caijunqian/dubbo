@@ -233,7 +233,7 @@ public class RegistryProtocol implements Protocol, ScopeModelAware {
         overrideListeners.put(registryUrl, overrideSubscribeListener);
 
         providerUrl = overrideUrlWithConfig(providerUrl, overrideSubscribeListener);
-        //export invoker
+        //export invoker    // 先进行LocalExport，创建Netty服务器，包装成DubboExporter、ProtocolServer并缓存
         final ExporterChangeableWrapper<T> exporter = doLocalExport(originInvoker, providerUrl);
 
         // url to registry
@@ -258,7 +258,7 @@ public class RegistryProtocol implements Protocol, ScopeModelAware {
 
         notifyExport(exporter);
         //Ensure that a new exporter instance is returned every time export
-        return new DestroyableExporter<>(exporter);
+        return new DestroyableExporter<>(exporter);// export之后也是返回一个Exporter(DestroyableExporter)
     }
 
     private <T> void notifyExport(ExporterChangeableWrapper<T> exporter) {
@@ -286,7 +286,9 @@ public class RegistryProtocol implements Protocol, ScopeModelAware {
         String key = getCacheKey(originInvoker);
 
         return (ExporterChangeableWrapper<T>) bounds.computeIfAbsent(key, s -> {
+            // 把Invoker和providerUrl包装成代理对象
             Invoker<?> invokerDelegate = new InvokerDelegate<>(originInvoker, providerUrl);
+            // 调用DubboProtocol对象的protocol.export(invokerDelegate)
             return new ExporterChangeableWrapper<>((Exporter<T>) protocol.export(invokerDelegate), originInvoker);
         });
     }

@@ -294,6 +294,7 @@ public class DubboProtocol extends AbstractProtocol {
 
         // export service.
         String key = serviceKey(url);
+        // 包装成DubboExporter
         DubboExporter<T> exporter = new DubboExporter<T>(invoker, key, exporterMap);
         exporterMap.put(key, exporter);
 
@@ -310,7 +311,7 @@ public class DubboProtocol extends AbstractProtocol {
 
             }
         }
-
+        // 启动netty服务端，监听端口
         openServer(url);
         optimizeSerialization(url);
 
@@ -329,6 +330,7 @@ public class DubboProtocol extends AbstractProtocol {
                 synchronized (this) {
                     server = serverMap.get(key);
                     if (server == null) {
+                        // 创建netty服务器（ProtocolServer），放到缓存中
                         serverMap.put(key, createServer(url));
                     }else {
                         server.reset(url);
@@ -363,6 +365,7 @@ public class DubboProtocol extends AbstractProtocol {
 
         ExchangeServer server;
         try {
+            // 通过Exchangers.bind将dubboUrl与netty的channelHandler绑定
             server = Exchangers.bind(url, requestHandler);
         } catch (RemotingException e) {
             throw new RpcException("Fail to start server(url: " + url + ") " + e.getMessage(), e);
@@ -375,7 +378,7 @@ public class DubboProtocol extends AbstractProtocol {
                 throw new RpcException("Unsupported client type: " + str);
             }
         }
-
+        // 包装成DubboProtocolServer
         DubboProtocolServer protocolServer = new DubboProtocolServer(server);
         loadServerProperties(protocolServer);
         return protocolServer;

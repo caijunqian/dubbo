@@ -606,7 +606,7 @@ public abstract class AbstractConfig implements Serializable {
                     " with prefix [" + preferredPrefix +
                     "], extracted props: " + subProperties);
             }
-
+            // cm: 根据配置或者默认值，给ServiceConfig对象赋值
             assignProperties(this, environment, subProperties, subPropsConfiguration);
 
             // process extra refresh of sub class, e.g. refresh method configs

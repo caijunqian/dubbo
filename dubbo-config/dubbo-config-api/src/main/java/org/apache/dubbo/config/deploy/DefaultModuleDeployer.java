@@ -417,6 +417,7 @@ public class DefaultModuleDeployer extends AbstractDeployer<ModuleModel> impleme
     @Override
     public void prepare() {
         applicationDeployer.initialize();
+        // cm: applicationDeployer中初始化了，现在不用再初始化了
         this.initialize();
     }
 

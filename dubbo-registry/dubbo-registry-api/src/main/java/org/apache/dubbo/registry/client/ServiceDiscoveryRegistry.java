@@ -153,7 +153,7 @@ public class ServiceDiscoveryRegistry extends FailbackRegistry {
         if (!shouldRegister(url)) { // Should Not Register
             return;
         }
-        doRegister(url);
+        doRegister(url);//在这里执行服务发现，即注册服务到zk
     }
 
     @Override
