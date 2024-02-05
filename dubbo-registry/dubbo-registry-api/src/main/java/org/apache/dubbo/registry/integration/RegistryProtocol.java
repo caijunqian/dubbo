@@ -480,7 +480,7 @@ public class RegistryProtocol implements Protocol, ScopeModelAware {
                 return doRefer(Cluster.getCluster(url.getScopeModel(), MergeableCluster.NAME), registry, type, url, qs);
             }
         }
-
+        // 创建MockClusterWrapper(FailoverCluster)
         Cluster cluster = Cluster.getCluster(url.getScopeModel(), qs.get(CLUSTER_KEY));
         return doRefer(cluster, registry, type, url, qs);
     }
@@ -496,6 +496,7 @@ public class RegistryProtocol implements Protocol, ScopeModelAware {
             parameters,
             consumerAttribute);
         url = url.putAttribute(CONSUMER_URL_KEY, consumerUrl);
+        // 创建ServiceDiscoveryMigrationInvoker（FailOverInvoker）
         ClusterInvoker<T> migrationInvoker = getMigrationInvoker(this, cluster, registry, type, url, consumerUrl);
         return interceptInvoker(migrationInvoker, url, consumerUrl, url);
     }
@@ -526,7 +527,7 @@ public class RegistryProtocol implements Protocol, ScopeModelAware {
         if (CollectionUtils.isEmpty(listeners)) {
             return invoker;
         }
-
+        // 执行回调？好像发起了连接
         for (RegistryProtocolListener listener : listeners) {
             listener.onRefer(this, invoker, consumerUrl, registryURL);
         }

@@ -200,6 +200,7 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
         }
 
         if (ref == null) {
+            // 只干了init方法，创建了接口的实现类ref
             init();
         }
 
@@ -244,8 +245,8 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
         if (!this.isRefreshed()) {
             this.refresh();
         }
-
-        //init serviceMetadata
+        // 上方代码和ServiceConfig做的事情类似
+        //init serviceMetadata 做一些数据的准备，如获取ReferenceConfig的参数转化为内部对象
         initServiceMetadata(consumer);
         serviceMetadata.setServiceType(getServiceInterfaceClass());
         // TODO, uncomment this line once service key is unified
@@ -253,16 +254,16 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
 
         Map<String, String> referenceParameters = appendConfig();
 
-
+        // 通过ModuleServiceRepository把接口注册成ServiceDescriptor，再包装得到ConsumerModel
         ModuleServiceRepository repository = getScopeModel().getServiceRepository();
         ServiceDescriptor serviceDescriptor = repository.registerService(interfaceClass);
         consumerModel = new ConsumerModel(serviceMetadata.getServiceKey(), proxy, serviceDescriptor, this,
             getScopeModel(), serviceMetadata, createAsyncMethodInfo());
-
+        // 注册ConsumerModel
         repository.registerConsumer(consumerModel);
 
         serviceMetadata.getAttachments().putAll(referenceParameters);
-
+        // 在这里真正创建ReferenceConfig接口的代理对象
         ref = createProxy(referenceParameters);
 
         serviceMetadata.setTarget(ref);
@@ -272,7 +273,7 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
         consumerModel.initMethodModels();
 
         initialized = true;
-
+        // 跟配置判断是否check referenceConfig构建后是否可用
         checkInvokerAvailable();
     }
 
@@ -363,8 +364,8 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
 
     @SuppressWarnings({"unchecked"})
     private T createProxy(Map<String, String> referenceParameters) {
-        if (shouldJvmRefer(referenceParameters)) {
-            createInvokerForLocal(referenceParameters);
+        if (shouldJvmRefer(referenceParameters)) {  // 判断是否要查创建injvm的服务引用，当本地jvm存在时默认会优先引用injvm服务，除非特别指定调用远程服务
+            createInvokerForLocal(referenceParameters); // 本地存在Service则创建本地Invoker
         } else {
             urls.clear();
             if (url != null && url.length() > 0) {
@@ -376,6 +377,7 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
                     aggregateUrlFromRegistry(referenceParameters);
                 }
             }
+            // 创建远程的Invoker
             createInvokerForRemote();
         }
 
@@ -390,6 +392,8 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
         MetadataUtils.publishServiceDefinition(consumerUrl);
 
         // create service proxy
+        // 将上方创建的Invoker包装成代理, 即创建Ref代理类，代理ReferenceConfig<T>中的T，
+        // 具体执行逻辑通过Invoker去做，Invoker中封装了对远程Service的调用
         return (T) proxyFactory.getProxy(invoker, ProtocolUtils.isGeneric(generic));
     }
 
@@ -471,10 +475,12 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
     private void createInvokerForRemote() {
         if (urls.size() == 1) {
             URL curUrl = urls.get(0);
+            // 通过SPI(RegistryProtocol)创建Invoker, 得到MigrationInvoker
             invoker = protocolSPI.refer(interfaceClass,curUrl);
             if (!UrlUtils.isRegistry(curUrl)){
                 List<Invoker<?>> invokers = new ArrayList<>();
                 invokers.add(invoker);
+                // 把Invoker包装成ClusterInvoker
                 invoker = Cluster.getCluster(scopeModel, Cluster.DEFAULT).join(new StaticDirectory(curUrl, invokers), true);
             }
         } else {

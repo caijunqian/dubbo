@@ -63,6 +63,7 @@ public class StubProxyFactoryWrapper implements ProxyFactory {
 
     @Override
     public <T> T getProxy(Invoker<T> invoker, boolean generic) throws RpcException {
+        //为Invoker创建代理类，即为ref的泛型接口创建实现类
         T proxy = proxyFactory.getProxy(invoker, generic);
         if (GenericService.class != invoker.getInterface()) {
             URL url = invoker.getUrl();
