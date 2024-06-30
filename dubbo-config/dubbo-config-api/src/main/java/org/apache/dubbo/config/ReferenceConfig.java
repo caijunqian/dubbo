@@ -240,10 +240,10 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
         }
 
         // prepare application for reference
-        getScopeModel().getDeployer().prepare();
+        getScopeModel().getDeployer().prepare();// 和provider一样执行prepare方法，加载配置、注册中心、创建元数据上报实例等信息
 
         if (!this.isRefreshed()) {
-            this.refresh();
+            this.refresh(); // 和provider一样
         }
         // 上方代码和ServiceConfig做的事情类似
         //init serviceMetadata 做一些数据的准备，如获取ReferenceConfig的参数转化为内部对象
@@ -257,9 +257,11 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
         // 通过ModuleServiceRepository把接口注册成ServiceDescriptor，再包装得到ConsumerModel
         ModuleServiceRepository repository = getScopeModel().getServiceRepository();
         ServiceDescriptor serviceDescriptor = repository.registerService(interfaceClass);
+        // 包装成consumerModel
         consumerModel = new ConsumerModel(serviceMetadata.getServiceKey(), proxy, serviceDescriptor, this,
             getScopeModel(), serviceMetadata, createAsyncMethodInfo());
         // 注册ConsumerModel
+        // 通过repository放到缓存中
         repository.registerConsumer(consumerModel);
 
         serviceMetadata.getAttachments().putAll(referenceParameters);

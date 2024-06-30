@@ -321,11 +321,14 @@ public class DubboProtocol extends AbstractProtocol {
     private void openServer(URL url) {
         checkDestroyed();
         // find server.
+        // 因为已经到netty这一层了，到了这一层就只关心ip端口，故这里的缓存key为ip:port
         String key = url.getAddress();
         //client can export a service which's only for server to invoke
         boolean isServer = url.getParameter(IS_SERVER_KEY, true);
         if (isServer) {
             ProtocolServer server = serverMap.get(key);
+            // 第一次服务发现的url进行exportRemote的时候发现ProtocolServer是空的，就会去创建
+            // 后续registryUrl作为参数进来时就不会再创建，只是执行重置操作
             if (server == null) {
                 synchronized (this) {
                     server = serverMap.get(key);
@@ -350,6 +353,7 @@ public class DubboProtocol extends AbstractProtocol {
     }
 
     private ProtocolServer createServer(URL url) {
+        // providerUrl中有些和server相关的参数，如果缺省需要补充上codec，心跳，服务器类型等
         url = URLBuilder.from(url)
                 // send readonly event when server closes, it's enabled by default
                 .addParameterIfAbsent(CHANNEL_READONLYEVENT_SENT_KEY, Boolean.TRUE.toString())
@@ -365,7 +369,7 @@ public class DubboProtocol extends AbstractProtocol {
 
         ExchangeServer server;
         try {
-            // 通过Exchangers.bind将dubboUrl与netty的channelHandler绑定
+            // 通过Exchangers.bind将dubboUrl与ExchangeHandler绑定
             server = Exchangers.bind(url, requestHandler);
         } catch (RemotingException e) {
             throw new RpcException("Fail to start server(url: " + url + ") " + e.getMessage(), e);

@@ -571,6 +571,7 @@ public abstract class AbstractConfig implements Serializable {
         refreshed.set(true);
         try {
             // check and init before do refresh
+            // 判断ProviderConfig是不是空，是的话初始化未默认值
             preProcessRefresh();
 
             Environment environment = getScopeModel().getModelEnvironment();
@@ -584,6 +585,7 @@ public abstract class AbstractConfig implements Serializable {
                     break;
                 }
             }
+            // 获取接口全限定名
             if (preferredPrefix == null) {
                 preferredPrefix = getPrefixes().get(0);
             }
@@ -606,7 +608,7 @@ public abstract class AbstractConfig implements Serializable {
                     " with prefix [" + preferredPrefix +
                     "], extracted props: " + subProperties);
             }
-            // cm: 根据配置或者默认值，给ServiceConfig对象赋值
+            // cm: 获取赋值方法给ServiceConfig对象进行反射赋值，如setter方法
             assignProperties(this, environment, subProperties, subPropsConfiguration);
 
             // process extra refresh of sub class, e.g. refresh method configs
@@ -616,7 +618,7 @@ public abstract class AbstractConfig implements Serializable {
             logger.error("Failed to override field value of config bean: " + this, e);
             throw new IllegalStateException("Failed to override field value of config bean: " + this, e);
         }
-
+        // 后置处理操作，根据providerConfig(包括methodConfig）做一些Check操作，如是否injvm, stub, mock等
         postProcessRefresh();
     }
 

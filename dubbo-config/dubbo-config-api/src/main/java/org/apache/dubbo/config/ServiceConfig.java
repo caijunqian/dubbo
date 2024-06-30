@@ -197,10 +197,14 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
             ExtensionLoader<ServiceListener> extensionLoader = this.getExtensionLoader(ServiceListener.class);
             this.serviceListeners.addAll(extensionLoader.getSupportedExtensionInstances());
         }
+        // 根据上一步refresh获取到的ProviderConfig初始化服务元数据
+        // 服务元数据就是对服务实例的一个描述，或者说是定义
+        // 最终通过MetadataReport上报到元数据中心
         initServiceMetadata(provider);
-        serviceMetadata.setServiceType(getInterfaceClass());
-        serviceMetadata.setTarget(getRef());
-        serviceMetadata.generateServiceKey();
+
+        serviceMetadata.setServiceType(getInterfaceClass());   // 服务的接口Class对象
+        serviceMetadata.setTarget(getRef()); // 服务的接口实现类
+        serviceMetadata.generateServiceKey(); // 服务的Key，这里是全限定类名
     }
 
     @Override
@@ -215,12 +219,13 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
         moduleDeployer.prepare();
 
         if (!this.isRefreshed()) {
-            // cm: 校验并更新一些service的配置信息，并执行刷新后置处理器等
+            // cm: 获取interface的全限定名，刷新该interface对应的method、args配置信息
             // Refreshing ServiceConfig with prefix [dubbo.service.org.apache.dubbo.demo.DemoService]
             this.refresh();
         }
         if (this.shouldExport()) {
-            this.init(); // cm: 没做什么实际的东西
+            // 初始化服务元数据
+            this.init();
 
             if (shouldDelay()) {
                 doDelayExport();
@@ -230,6 +235,7 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
             }
 
             // notify export this service
+            // 不满足条件没有执行代码
             moduleDeployer.notifyExportService(this);
         }
     }
@@ -415,7 +421,7 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
 
         //init serviceMetadata attachments
         serviceMetadata.getAttachments().putAll(map);
-        // cm: dubbo://协议的URL，拼接了各种参数信息，如接口，方法等
+        // cm: 构建成dubbo://ip:prot，获取服务的ip端口，拼接了各种参数信息，如接口，方法等
         URL url = buildUrl(protocolConfig, registryURLs, map);
         // cm: 三个url传入，进行服务export
         exportUrl(url, registryURLs);
@@ -658,7 +664,7 @@ public class ServiceConfig<T> extends ServiceConfigBase<T> {
         // 真实调用流程ProxyFactory$Adaptive -> StubProxyFactoryWrapper ->JavassistProxyFactory
         Invoker<?> invoker = proxyFactory.getInvoker(ref, (Class) interfaceClass, url);
         if (withMetaData) {
-            // cm: 本地export不涉及, 远程涉及，只是简单的把metadata也包装进去
+            // cm: 本地export不涉及, 远程涉及，只是简单的把metadata（也就是ServiceConfig）组合到一个类中
             invoker = new DelegateProviderMetaDataInvoker(invoker, this);
         }
         // cm: 通过SPI注册到注册本地/注册中心，把invoker进行export成Exporter,并缓存到ServiceConfig

@@ -219,7 +219,7 @@ public class RegistryProtocol implements Protocol, ScopeModelAware {
 
     @Override
     public <T> Exporter<T> export(final Invoker<T> originInvoker) throws RpcException {
-        URL registryUrl = getRegistryUrl(originInvoker);
+        URL registryUrl = getRegistryUrl(originInvoker); // 从invoker中拿出调用doExportUrl中传入的两个URL参数，一个是service-discovery-registry协议,一个是dubbo协议
         // url to export locally
         URL providerUrl = getProviderUrl(originInvoker);
 
@@ -237,12 +237,16 @@ public class RegistryProtocol implements Protocol, ScopeModelAware {
         final ExporterChangeableWrapper<T> exporter = doLocalExport(originInvoker, providerUrl);
 
         // url to registry
-        final Registry registry = getRegistry(registryUrl);
+        // 获取注册中心对象
+        // 把providerUrl中的一些参数根据registry中的参数进行调整（估计providerUrl中有些参数需要从registryUrl中获取）
+        // 调整后的ProviderUrl才是用于注册的URL
+        final Registry registry = getRegistry(registryUrl); // 最终调用的是ZookeeperServiceDiscoveryRegistry
         final URL registeredProviderUrl = getUrlToRegistry(providerUrl, registryUrl);
 
         // decide if we need to delay publish
         boolean register = providerUrl.getParameter(REGISTER_KEY, true);
         if (register) {
+            // 在这里真正执行服务注册
             register(registry, registeredProviderUrl);
         }
 
