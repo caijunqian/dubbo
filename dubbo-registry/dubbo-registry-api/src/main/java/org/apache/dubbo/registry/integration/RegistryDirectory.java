@@ -161,6 +161,7 @@ public class RegistryDirectory<T> extends DynamicDirectory<T> {
                 providerURLs = addressListener.notify(providerURLs, getConsumerUrl(),this);
             }
         }
+        // 这里会根据providerUrl构建invoker(即dubboInvoker，构建过程中会和provider建立连接进行通信)
         refreshOverrideAndInvoker(providerURLs);
     }
 
@@ -184,7 +185,7 @@ public class RegistryDirectory<T> extends DynamicDirectory<T> {
     private synchronized void refreshOverrideAndInvoker(List<URL> urls) {
         // mock zookeeper://xxx?mock=return null
         overrideDirectoryUrl();
-        refreshInvoker(urls);
+        refreshInvoker(urls);// 根据providerUrl构建invoker
     }
 
     /**
@@ -232,6 +233,7 @@ public class RegistryDirectory<T> extends DynamicDirectory<T> {
                 oldUrlInvokerMap = new LinkedHashMap<>(Math.round(1 + this.urlInvokerMap.size() / DEFAULT_HASHMAP_LOAD_FACTOR));
                 this.urlInvokerMap.forEach(oldUrlInvokerMap::put);
             }
+            // 这里会构建与服务端通信的Invoker
             Map<URL, Invoker<T>> newUrlInvokerMap = toInvokers(oldUrlInvokerMap, invokerUrls);// Translate url list to Invoker map
 
             /**

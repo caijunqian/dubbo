@@ -526,6 +526,7 @@ public class DubboProtocol extends AbstractProtocol {
 
             // If the clients is empty, then the first initialization is
             if (CollectionUtils.isEmpty(typedClients)) {
+                // 这里会创建exchange，也就是NettyClient
                 typedClients = buildReferenceCountExchangeClientList(url, connectNum);
             } else {
                 for (int i = 0; i < typedClients.size(); i++) {

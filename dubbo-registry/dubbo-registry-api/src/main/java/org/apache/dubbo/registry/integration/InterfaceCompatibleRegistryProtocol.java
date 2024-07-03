@@ -68,6 +68,7 @@ public class InterfaceCompatibleRegistryProtocol extends RegistryProtocol {
     @Override
     protected <T> ClusterInvoker<T> getMigrationInvoker(RegistryProtocol registryProtocol, Cluster cluster, Registry registry, Class<T> type, URL url, URL consumerUrl) {
 //        ClusterInvoker<T> invoker = getInvoker(cluster, registry, type, url);
+        // 因为是applicationFirst所以走到了这个应用,接口兼容的InterfaceCompatibleRegistryProtocol
         return new MigrationInvoker<T>(registryProtocol, cluster, registry, type, url, consumerUrl);
     }
 

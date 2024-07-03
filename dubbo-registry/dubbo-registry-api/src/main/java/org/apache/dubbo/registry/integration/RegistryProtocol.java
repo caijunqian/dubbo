@@ -471,12 +471,12 @@ public class RegistryProtocol implements Protocol, ScopeModelAware {
     @SuppressWarnings("unchecked")
     public <T> Invoker<T> refer(Class<T> type, URL url) throws RpcException {
         url = getRegistryUrl(url);
-        Registry registry = getRegistry(url);
-        if (RegistryService.class.equals(type)) {
+        Registry registry = getRegistry(url); // 获取zk的是zk注册器，不是服务发现的
+        if (RegistryService.class.equals(type)) { // type是DemoService 不走这里
             return proxyFactory.getInvoker((T) registry, type, url);
         }
 
-        // group="a,b" or group="*"
+        // group="a,b" or group="*" // 无分组配置，也不走
         Map<String, String> qs = (Map<String, String>) url.getAttribute(REFER_KEY);
         String group = qs.get(GROUP_KEY);
         if (group != null && group.length() > 0) {
@@ -484,8 +484,8 @@ public class RegistryProtocol implements Protocol, ScopeModelAware {
                 return doRefer(Cluster.getCluster(url.getScopeModel(), MergeableCluster.NAME), registry, type, url, qs);
             }
         }
-        // 创建MockClusterWrapper(FailoverCluster)
-        Cluster cluster = Cluster.getCluster(url.getScopeModel(), qs.get(CLUSTER_KEY));
+        // 通过ScopeModel拿到MockClusterWrapper(FailoverCluster)
+        Cluster cluster = Cluster.getCluster(url.getScopeModel(), qs.get(CLUSTER_KEY)); // 通过ScopeModel加载extension拿到默认的cluster
         return doRefer(cluster, registry, type, url, qs);
     }
 
@@ -500,7 +500,7 @@ public class RegistryProtocol implements Protocol, ScopeModelAware {
             parameters,
             consumerAttribute);
         url = url.putAttribute(CONSUMER_URL_KEY, consumerUrl);
-        // 创建ServiceDiscoveryMigrationInvoker（FailOverInvoker）
+        // 创建ServiceDiscoveryMigrationInvoker（MockInvokerWrapper[FailOverInvoker]）
         ClusterInvoker<T> migrationInvoker = getMigrationInvoker(this, cluster, registry, type, url, consumerUrl);
         return interceptInvoker(migrationInvoker, url, consumerUrl, url);
     }
@@ -531,7 +531,7 @@ public class RegistryProtocol implements Protocol, ScopeModelAware {
         if (CollectionUtils.isEmpty(listeners)) {
             return invoker;
         }
-        // 执行回调？好像发起了连接
+        // 找到了一个监听器，MigrationRuleListener
         for (RegistryProtocolListener listener : listeners) {
             listener.onRefer(this, invoker, consumerUrl, registryURL);
         }
@@ -545,7 +545,7 @@ public class RegistryProtocol implements Protocol, ScopeModelAware {
 
     public <T> ClusterInvoker<T> getInvoker(Cluster cluster, Registry registry, Class<T> type, URL url) {
         // FIXME, this method is currently not used, create the right registry before enable.
-        DynamicDirectory<T> directory = new RegistryDirectory<>(type, url);
+        DynamicDirectory<T> directory = new RegistryDirectory<>(type, url);// 订阅和更新ServiceInterface对应的Provider的信息
         return doCreateInvoker(directory, cluster, registry, type);
     }
 
@@ -561,10 +561,10 @@ public class RegistryProtocol implements Protocol, ScopeModelAware {
         urlToRegistry = urlToRegistry.setServiceModel(directory.getConsumerUrl().getServiceModel());
         if (directory.isShouldRegister()) {
             directory.setRegisteredConsumerUrl(urlToRegistry);
-            registry.register(directory.getRegisteredConsumerUrl());
+            registry.register(directory.getRegisteredConsumerUrl());// 这里会把消费者注册到注册中心去
         }
         directory.buildRouterChain(urlToRegistry);
-        directory.subscribe(toSubscribeUrl(urlToRegistry));
+        directory.subscribe(toSubscribeUrl(urlToRegistry)); // 这里发起订阅，像注册中心获取服务接口对应的provider相关的信息
 
         return (ClusterInvoker<T>) cluster.join(directory, true);
     }

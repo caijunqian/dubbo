@@ -482,7 +482,6 @@ public class ReferenceConfig<T> extends ReferenceConfigBase<T> {
             if (!UrlUtils.isRegistry(curUrl)){
                 List<Invoker<?>> invokers = new ArrayList<>();
                 invokers.add(invoker);
-                // 把Invoker包装成ClusterInvoker
                 invoker = Cluster.getCluster(scopeModel, Cluster.DEFAULT).join(new StaticDirectory(curUrl, invokers), true);
             }
         } else {

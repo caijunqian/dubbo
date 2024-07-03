@@ -445,6 +445,7 @@ public class MigrationInvoker<T> implements MigrationClusterInvoker<T> {
             if (invoker != null) {
                 invoker.destroy();
             }
+
             invoker = registryProtocol.getInvoker(cluster, registry, type, url);
         }
         setListener(invoker, () -> {
@@ -454,7 +455,7 @@ public class MigrationInvoker<T> implements MigrationClusterInvoker<T> {
 //                createConsumptionReport(consumerUrl.getServiceInterface(), consumerUrl.getVersion(), consumerUrl.getGroup(), "interface")
 //            );
             if (step == APPLICATION_FIRST) {
-                calcPreferredInvoker(rule);
+                calcPreferredInvoker(rule); // 设置监听器，当Invoker发生变化时，就重新计算选出当前可用的invoker
             }
         });
     }

@@ -181,7 +181,7 @@ public class ZookeeperRegistry extends CacheableFailbackRegistry {
                         if (zkListener instanceof RegistryChildListenerImpl) {
                             ((RegistryChildListenerImpl) zkListener).setLatch(latch);
                         }
-                        zkClient.create(path, false);
+                        zkClient.create(path, false);// 跟zk说订阅这个path: /dubbo/org.apache.dubbo.demo.DemoService/providers
                         List<String> children = zkClient.addChildListener(path, zkListener);
                         if (children != null) {
                             urls.addAll(toUrlsWithEmpty(url, path, children));
