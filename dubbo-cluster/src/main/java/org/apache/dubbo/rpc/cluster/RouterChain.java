@@ -173,7 +173,7 @@ public class RouterChain<T> {
             for (StateRouter stateRouter : stateRouters) {
                 if (stateRouter.isEnable()) {
                     RouterCache<T> routerCache = cache.getCache().get(stateRouter.getName());
-                    finalBitListInvokers = stateRouter.route(finalBitListInvokers, routerCache, url, invocation);
+                    finalBitListInvokers = stateRouter.route(finalBitListInvokers, routerCache, url, invocation);// 通过TagRouter对象，路由到了对应的Invoker
                 }
             }
             finalInvokers = new ArrayList<>(finalBitListInvokers.size());
@@ -184,10 +184,11 @@ public class RouterChain<T> {
         if (finalInvokers == null) {
             finalInvokers = new ArrayList<>(invokers);
         }
-
+        // 这里又进行了路由
         for (Router router : routers) {
             finalInvokers = router.route(finalInvokers, url, invocation);
         }
+        // 最终拿到了符合要求的invoker列表
         return finalInvokers;
     }
 

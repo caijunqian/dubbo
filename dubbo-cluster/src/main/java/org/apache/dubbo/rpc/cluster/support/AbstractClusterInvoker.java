@@ -261,8 +261,10 @@ public abstract class AbstractClusterInvoker<T> implements ClusterInvoker<T> {
 //        if (contextAttachments != null && contextAttachments.size() != 0) {
 //            ((RpcInvocation) invocation).addObjectAttachmentsIfAbsent(contextAttachments);
 //        }
-
+        // 从dynamicDirectory中拿到dubboInvoker，这里是直接从缓存中拿
+        // （这里其实还有一个路由的过程，我们知道dubbo可以给实例打上tag，然后根据tag路由到指定的实例）
         List<Invoker<T>> invokers = list(invocation);
+        // 通过SPI获取负载均衡算法对象，这里拿到的默认是随机负载均衡
         LoadBalance loadbalance = initLoadBalance(invokers, invocation);
         RpcUtils.attachInvocationIdIfAsync(getUrl(), invocation);
         return doInvoke(invocation, invokers, loadbalance);

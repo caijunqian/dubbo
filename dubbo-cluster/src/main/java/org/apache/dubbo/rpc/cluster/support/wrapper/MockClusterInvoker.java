@@ -91,7 +91,7 @@ public class MockClusterInvoker<T> implements ClusterInvoker<T> {
         String value = getUrl().getMethodParameter(invocation.getMethodName(), MOCK_KEY, Boolean.FALSE.toString()).trim();
         if (value.length() == 0 || "false".equalsIgnoreCase(value)) {
             //no mock
-            result = this.invoker.invoke(invocation);
+            result = this.invoker.invoke(invocation);// 不mock，发起真实请求，会执行到这然后经过一个filterChain
         } else if (value.startsWith(FORCE_KEY)) {
             if (logger.isWarnEnabled()) {
                 logger.warn("force-mock: " + invocation.getMethodName() + " force-mock enabled , url : " + getUrl());
